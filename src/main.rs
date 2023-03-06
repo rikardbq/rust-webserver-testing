@@ -1,23 +1,41 @@
 use std::{path::PathBuf, str};
 use env_logger::Env;
-use log::{debug, info};
 use actix_files::NamedFile;
 use actix_web::{get, Result, App, HttpResponse, HttpRequest, HttpServer, Responder};
-use serde_json::Value as SerdeValue;
+use serde_json::{Value as SerdeValue};
+use serde::Serialize;
+
+mod tera_func;
+use tera_func::*;
 
 mod helpers;
-use helpers::curl_helper;
+use helpers::{curl_helper, misc_helper::k_to_c};
 
 const API_KEY: &str = "3015d4f03f43caefb8b947ea96c1656f";
 const LAT: f32 = 57.7;
 const LNG: f32 = 12.0;
 
+#[derive(Serialize)]
+struct IndexPage {
+    wbox_html: String
+}
 
 #[get("/")]
-async fn index(_req: HttpRequest) -> Result<NamedFile> {
-    let f_path: PathBuf = "./static/index.html".parse().unwrap();
-    debug!("{}", f_path.to_str().unwrap());
+async fn index(_req: HttpRequest) -> impl Responder {
 
+    let mut esc_vader = String::new();
+    html_escape::decode_html_entities_to_string(&mk_fragment("weather", &_weather_proxy()), &mut esc_vader);
+    
+    let ipage = IndexPage { wbox_html: esc_vader };
+    let value = serde_json::to_value(ipage).unwrap();
+    let index = mk_page("front", &value);
+
+    HttpResponse::Ok().body(index)
+}
+
+#[get("/stil")]
+async fn styles(_req: HttpRequest) -> Result<NamedFile> {
+    let f_path: PathBuf = "./static/css/actix-test.css".parse().unwrap();
     Ok(NamedFile::open(f_path)?)
 }
 
@@ -31,42 +49,26 @@ async fn home(req: HttpRequest) -> impl Responder {
 
 #[get("/weather")]
 async fn weather(_req: HttpRequest) -> impl Responder {
+    let vader_div = mk_fragment("weather", &_weather_proxy());
+    HttpResponse::Ok().body(vader_div)
+}
+
+fn _weather_proxy() -> SerdeValue {
     let weather_api_path = format!("https://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&appid={}", LAT, LNG, API_KEY);
     let res = curl_helper::get_from(&weather_api_path);
-    let v: SerdeValue = serde_json::from_str(res.as_str()).unwrap();
-    info!("Main {}\nSys {}\nWeather {}", v["main"]["humidity"], v["sys"], v["weather"][0]["main"]);
+    let mut vader_val:SerdeValue = serde_json::from_str(res.as_str()).unwrap();
 
-    let weather = &v["weather"][0]["main"].to_string();
-    let humidity = &v["main"]["humidity"].to_string();
-    let pressure = &v["main"]["pressure"].to_string();
-    let temp = &v["main"]["temp"].to_string();
-    let sunrise = &v["sys"]["sunrise"].to_string();
-    let sunset = &v["sys"]["sunset"].to_string();
-    let div = r#"
-    <div id="weather">
-        <div id="1">
-            <h3>Weather</h3>
-            <p>{weather}</p>
-            <ul>
-                <li>humidity: {humidity}</li>
-                <li>pressure: {pressure}</li>
-                <li>temp: {temp}</li>
-                <li>sunrise: {sunrise}</li>
-                <li>sunset: {sunset}</li>
-            </ul>
-        </div>
-    </div>
-    "#;
+    // OpenWeather har förövrigt en parameter "mode" kan anges
+    // med "metric" så man får temperatur i Celsius.
 
-    let result_div = div
-        .replace("{weather}", weather)
-        .replace("{humidity}", humidity)
-        .replace("{pressure}", pressure)
-        .replace("{temp}", temp)
-        .replace("{sunrise}", sunrise)
-        .replace("{sunset}", sunset);
+    // .. men det här är roligare ;-D
+    // och demonstrerar den litet snålt dokumenterade metoden `pointer_mut`.
+    // man kan också manipulera Tera::Context ifall man behöver ändra inputen till mallarna.
 
-    HttpResponse::Ok().body(result_div)
+    let deg_c:f64 = k_to_c(vader_val["main"]["temp"].as_f64().unwrap());
+    *vader_val.pointer_mut("/main/temp").unwrap() = format!("{:1.1} °C", deg_c).into();
+
+    vader_val
 }
 
 #[actix_web::main]
@@ -77,6 +79,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
         .service(home)
+        .service(styles)
         .service(weather)
         .service(index)
     })

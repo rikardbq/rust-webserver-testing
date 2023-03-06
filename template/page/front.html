@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/stil" rel="stylesheet">
+  <title>testing actix</title>
+</head>
+<body>
+  <h1>herro</h1>
+  <section id="inhold">
+    {{ wbox_html }}
+  </section>
+  <div class="knapp" title="nyfiknast i Partille" id="njos">senaste väder-nytt ♥</div>
+  <script>
+    const vader_anrop = () => {
+      fetch('/weather')
+        .then(async r => {
+          if(r.ok) {
+            wrapp.innerHTML = await r.text();
+          }
+        });
+    },
+    knapp = document.getElementById('njos'),
+    wrapp = document.getElementById('inhold');
+    knapp.addEventListener('click', vader_anrop);
+  </script>
+</body>
+</html>

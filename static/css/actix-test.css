@@ -1,0 +1,14 @@
+.knapp {
+    display: inline-block;
+    font-family: 'Comic Sans MS', 'Comic Sans', serif;
+    padding: 0.3rem 1rem 0.5rem;
+    background-color: khaki;
+    border: 1px solid gray;
+    border-radius: 2rem;
+    cursor: pointer;
+}
+
+.knapp:hover {
+    background-color: greenyellow;
+    color: maroon;
+}

@@ -1,0 +1,13 @@
+<div id="weather">
+    <div id="1">
+        <h3>Väder</h3>
+        <p>{{ weather[0].main }}</p>
+        <ul>
+            <li>Luftfuktighet: {{ main.humidity }}%</li>
+            <li>Lufttryck: {{ main.pressure }} millibar</li>
+            <li>Temperatur: {{ main.temp }}</li>
+            <li>Soluppgång: {{ sys.sunrise | date(format="%H:%M") }}</li>
+            <li>Solnedgång: {{ sys.sunset | date(format="%H:%M") }}</li>
+        </ul>
+    </div>
+</div>
