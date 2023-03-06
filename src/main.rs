@@ -1,7 +1,7 @@
 use std::{path::PathBuf, str};
 use env_logger::Env;
 use actix_files::NamedFile;
-use actix_web::{get, Result, App, HttpResponse, HttpRequest, HttpServer, Responder};
+use actix_web::{web, get, Result, App, HttpResponse, HttpRequest, HttpServer, Responder};
 use serde_json::{Value as SerdeValue};
 use serde::Serialize;
 
@@ -24,8 +24,10 @@ struct IndexPage {
 async fn index(_req: HttpRequest) -> impl Responder {
 
     let mut esc_vader = String::new();
-    html_escape::decode_html_entities_to_string(&mk_fragment("weather", &_weather_proxy()), &mut esc_vader);
-    
+    // behändigt
+    //html_escape::decode_html_entities_to_string(&mk_fragment("weather", &_weather_proxy()), &mut esc_vader);
+    esc_vader.push_str(&mk_fragment("weather", &_weather_proxy()));
+
     let ipage = IndexPage { wbox_html: esc_vader };
     let value = serde_json::to_value(ipage).unwrap();
     let index = mk_page("front", &value);
@@ -33,10 +35,11 @@ async fn index(_req: HttpRequest) -> impl Responder {
     HttpResponse::Ok().body(index)
 }
 
-#[get("/stil")]
-async fn styles(_req: HttpRequest) -> Result<NamedFile> {
-    let f_path: PathBuf = "./static/css/actix-test.css".parse().unwrap();
-    Ok(NamedFile::open(f_path)?)
+#[get("/static/{filename:.*}")]
+async fn static_files(info: web::Path<String>) -> Result<NamedFile> {
+    let info = info.into_inner();
+    let path: PathBuf = ["./static/", info.as_str()].join("").parse().unwrap();
+    Ok(NamedFile::open(path)?)
 }
 
 #[get("/home")]
@@ -79,8 +82,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
         .service(home)
-        .service(styles)
         .service(weather)
+        .service(static_files)
         .service(index)
     })
     .bind(("127.0.0.1", 8080))?
