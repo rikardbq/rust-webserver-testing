@@ -3,7 +3,7 @@
 ## Html_escape
 _escape html_  
 html_escape::encode_safe_to_string( a \<String>, b \<&mut String>)  
-[manual](https://docs.rs/html-escape/latest/html_escape/fn.decode_html_entities_to_string.html)
+[manual](https://docs.rs/html-escape/latest/html_escape/fn.encode_safe_to_string.html)
 
 _"raw" från escaped_  
 html_escape::decode_html_entities_to_string( a \<String>, b \<&mut String>)  
