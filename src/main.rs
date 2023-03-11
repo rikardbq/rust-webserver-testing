@@ -23,11 +23,7 @@ struct IndexPage {
 #[get("/")]
 async fn index(_req: HttpRequest) -> impl Responder {
 
-    let mut esc_vader = String::new();
-    // behändigt
-    //html_escape::decode_html_entities_to_string(&mk_fragment("weather", &_weather_proxy()), &mut esc_vader);
-    esc_vader.push_str(&mk_fragment("weather", &_weather_proxy()));
-
+    let esc_vader = mk_fragment("weather", &_weather_proxy());
     let ipage = IndexPage { wbox_html: esc_vader };
     let value = serde_json::to_value(ipage).unwrap();
     let index = mk_page("front", &value);
